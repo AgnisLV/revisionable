@@ -388,7 +388,7 @@ trait RevisionableTrait
         $changes_to_record = array();
         foreach ($this->getAttributes() as $key => $value) {
             // check that the field is revisionable
-            if ($this->isRevisionable($key) && !is_array($value)) {
+            if ($this->isRevisionable($key) && !is_array($value) && $value) {
                 $changes_to_record[$key] = $value;
             } 
         }
