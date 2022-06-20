@@ -232,20 +232,22 @@ trait RevisionableTrait
 
         if ((!isset($this->revisionEnabled) || $this->revisionEnabled))
         {
-            $revisions[] = array(
-                'revisionable_type' => $this->getMorphClass(),
-                'revisionable_id' => $this->getKey(),
-                'key' => self::CREATED_AT,
-                'old_value' => null,
-                'new_value' => $this->{self::CREATED_AT},
-                'user_id' => $this->getSystemUserId(),
-                'created_at' => new \DateTime(),
-                'updated_at' => new \DateTime(),
-            );
+            $changes_to_record = $this->createdRevisionableFields();
+            $revisions = array();
+            foreach ($changes_to_record as $key => $change) {
+                $original = array(
+                    'revisionable_type' => $this->getMorphClass(),
+                    'revisionable_id' => $this->getKey(),
+                    'key' => $key,
+                    'old_value' => null,
+                    'new_value' => $change,
+                    'user_id' => $this->getSystemUserId(),
+                    'created_at' => new \DateTime(),
+                    'updated_at' => new \DateTime(),
+                );
 
-            //Determine if there are any additional fields we'd like to add to our model contained in the config file, and
-            //get them into an array.
-            $revisions = array_merge($revisions[0], $this->getAdditionalFields());
+                $revisions[] = array_merge($original, $this->getAdditionalFields());
+            }
 
             $revision = Revisionable::newModel();
             \DB::table($revision->getTable())->insert($revisions);
@@ -378,6 +380,18 @@ trait RevisionableTrait
             }
         }
 
+        return $changes_to_record;
+    }
+
+    private function createdRevisionableFields()
+    {
+        $changes_to_record = array();
+        foreach ($this->getAttributes() as $key => $value) {
+            // check that the field is revisionable
+            if ($this->isRevisionable($key) && !is_array($value)) {
+                $changes_to_record[$key] = $value;
+            } 
+        }
         return $changes_to_record;
     }
 
